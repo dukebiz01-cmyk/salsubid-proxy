@@ -1,4 +1,5 @@
 const express = require('express');
+console.log('G2B KEY:', process.env.G2B_SERVICE_KEY ? '있음' : '없음');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
