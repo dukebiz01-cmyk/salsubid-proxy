@@ -1,19 +1,19 @@
 const express = require('express');
-console.log('G2B KEY:', process.env.G2B_SERVICE_KEY ? '있음' : '없음');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+console.log('G2B KEY:', process.env.G2B_SERVICE_KEY ? '있음' : '없음');
+
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   next();
 });
 
-// 테스트
 app.get('/api/test', (req, res) => {
   res.json({ ok: true, message: '살수비드 서버 작동중' });
 });
 
-// G2B 입찰공고
 app.get('/api/g2b', async (req, res) => {
   const SERVICE_KEY = process.env.G2B_SERVICE_KEY;
   const { keyword = '살수차', page = 1, size = 20 } = req.query;
@@ -47,12 +47,14 @@ app.get('/api/g2b', async (req, res) => {
   try {
     const url = `https://apis.data.go.kr/1230000/BidPublicInfoService/getBidPblancListInfoServc?serviceKey=${SERVICE_KEY}&numOfRows=${size}&pageNo=${page}&type=json&bidNtceNm=${encodeURIComponent(keyword)}`;
     const response = await fetch(url);
-    const data = await response.json();
+    const text = await response.text();
+    console.log('G2B 응답:', text.substring(0, 300));
+    const data = JSON.parse(text);
     const items = data?.response?.body?.items?.item || [];
     const total = data?.response?.body?.totalCount || 0;
     const list = Array.isArray(items) ? items : [items];
 
-    res.json({
+    return res.json({
       success: true,
       total,
       items: list.map(item => ({
@@ -65,7 +67,8 @@ app.get('/api/g2b', async (req, res) => {
       })),
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.log('에러:', err.message);
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 
