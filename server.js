@@ -81,4 +81,4 @@ function getStatus(dt) {
   return '진행중';
 }
 
-app.listen(PORT, () => console.log(`서버 실행중 :${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`서버 실행중 :${PORT}`));
