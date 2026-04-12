@@ -45,7 +45,7 @@ app.get('/api/g2b', async (req, res) => {
   }
 
   try {
-    const url = `https://apis.data.go.kr/1230000/BidPublicInfoService/getBidPblancListInfoServc?serviceKey=${encodeURIComponent(SERVICE_KEY)}}&numOfRows=${size}&pageNo=${page}&type=json&bidNtceNm=${encodeURIComponent(keyword)}`;
+    const url = `https://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServc?serviceKey=${SERVICE_KEY}&numOfRows=${size}&pageNo=${page}&type=json&bidNtceNm=${encodeURIComponent(keyword)}`;
     const response = await fetch(url);
     const text = await response.text();
     console.log('G2B 응답:', text.substring(0, 300));
