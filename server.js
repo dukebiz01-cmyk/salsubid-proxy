@@ -1,84 +1,59 @@
 const express = require('express');
+const cors = require('cors');
+const axios = require('axios');
+
 const app = express();
-const PORT = process.env.PORT || 3000;
+app.use(cors());
 
-console.log('G2B KEY:', process.env.G2B_SERVICE_KEY ? '있음' : '없음');
+const SERVICE_KEY = process.env.G2B_API_KEY;
+const G2B_URL = 'https://apis.data.go.kr/1230000/BidPublicInfoService04/getBidPblancListInfoServc01';
 
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  next();
-});
+app.get('/api/bids', async (req, res) => {
+  const { keyword = '살수차', pageNo = 1, numOfRows = 20 } = req.query;
 
-app.get('/api/test', (req, res) => {
-  res.json({ ok: true, message: '살수비드 서버 작동중' });
-});
-
-app.get('/api/g2b', async (req, res) => {
-  const SERVICE_KEY = process.env.G2B_SERVICE_KEY;
-  const { keyword = '살수차', page = 1, size = 20 } = req.query;
-
-  if (!SERVICE_KEY) {
-    return res.json({
-      success: true,
-      mock: true,
-      total: 2,
-      items: [
-        {
-          id: 'MOCK-001',
-          title: '청주시 도로살수 용역',
-          agency: '청주시 도로관리과',
-          amount: '48000000',
-          deadline: new Date(Date.now() + 86400000 * 2).toISOString(),
-          status: '마감임박',
-        },
-        {
-          id: 'MOCK-002',
-          title: '충북도청 살수차 용역',
-          agency: '충청북도',
-          amount: '120000000',
-          deadline: new Date(Date.now() + 86400000 * 5).toISOString(),
-          status: '진행중',
-        },
-      ],
-    });
-  }
+  // 오늘 기준 30일 범위
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const fmt = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}0000`;
+  const end = fmt(new Date(now.getTime() + 30*24*3600*1000));
+  const start = fmt(new Date(now.getTime() - 7*24*3600*1000));
 
   try {
-    const url = `https://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServc?serviceKey=${SERVICE_KEY}&numOfRows=${size}&pageNo=${page}&_type=json&bidNtceNm=${encodeURIComponent(keyword)}`;
-    const response = await fetch(url);
-    const text = await response.text();
-    console.log('G2B 응답:', text.substring(0, 300));
-    const data = JSON.parse(text);
-    const items = data?.response?.body?.items?.item || [];
-    const total = data?.response?.body?.totalCount || 0;
+    const { data } = await axios.get(G2B_URL, {
+      params: {
+        serviceKey: SERVICE_KEY,
+        numOfRows,
+        pageNo,
+        type: 'json',
+        bidNtceNm: keyword,
+        inqryBgnDt: start,
+        inqryEndDt: end,
+      },
+      timeout: 10000
+    });
+
+    const items = data?.response?.body?.items || [];
     const list = Array.isArray(items) ? items : [items];
 
-    return res.json({
-      success: true,
-      total,
-      items: list.map(item => ({
-        id: item.bidNtceNo,
-        title: item.bidNtceNm,
-        agency: item.dminsttNm,
-        amount: item.asignBdgtAmt,
-        deadline: item.bidClseDt,
-        status: getStatus(item.bidClseDt),
-      })),
-    });
+    const result = list.map(i => ({
+      id:       i.bidNtceNo || '',
+      title:    i.bidNtceNm || '',
+      agency:   i.ntceInsttNm || '',
+      amount:   Number(i.asignBdgtAmt || i.presmptPrce || 0),
+      deadline: i.bidClseDt || '',
+      bidType:  i.ntceKindNm || '',
+      region:   i.rgnNm || '',
+    }));
+
+    res.json({ ok: true, total: data?.response?.body?.totalCount || 0, items: result });
+
   } catch (err) {
-    console.log('에러:', err.message);
-    return res.status(500).json({ success: false, error: err.message });
+    console.error(err.message);
+    res.status(500).json({ ok: false, message: err.message });
   }
 });
 
-function getStatus(dt) {
-  if (!dt) return '확인필요';
-  const diff = (new Date(dt) - Date.now()) / 36e5;
-  if (diff < 0) return '마감';
-  if (diff < 24) return '마감임박';
-  if (diff < 72) return 'D-3';
-  return '진행중';
-}
+app.get('/', (req, res) => res.json({ status: 'BidGear proxy running' }));
 
-app.listen(PORT, '0.0.0.0', () => console.log(`서버 실행중 :${PORT}`));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log
