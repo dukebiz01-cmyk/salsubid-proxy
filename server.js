@@ -9,7 +9,7 @@ const SERVICE_KEY = process.env.G2B_API_KEY;
 
 console.log('G2B KEY:', SERVICE_KEY ? '있음' : '없음');
 
-const G2B_URL = 'http://apis.data.go.kr/1230000/BidPublicInfoService04/getBidPblancListInfoServc01';
+const G2B_URL = 'http://apis.data.go.kr/1230000/BidPublicInfoService04/getBidPblancListInfoServc';
 
 app.get('/api/bids', async (req, res) => {
   const keyword  = req.query.keyword  || '살수차';
