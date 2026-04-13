@@ -53,8 +53,10 @@ app.get('/api/bids', async (req, res) => {
     res.json({ ok: true, total: body?.totalCount || 0, items });
 
   } catch (err) {
-    console.error('에러:', err.message);
-    res.status(500).json({ ok: false, message: err.message });
+    const detail = err.response ? JSON.stringify(err.response.data) : err.message;
+    console.error('에러 상세:', detail);
+    res.status(500).json({ ok: false, message: detail });
+  }
   }
 });
 
