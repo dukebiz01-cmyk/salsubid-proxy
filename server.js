@@ -6,19 +6,18 @@ const app = express();
 app.use(cors());
 
 const SERVICE_KEY = process.env.G2B_API_KEY;
-
 console.log('G2B KEY:', SERVICE_KEY ? '있음' : '없음');
 
-const G2B_URL = 'http://apis.data.go.kr/1230000/BidPublicInfoService04/getBidPblancListInfoServc';
+const G2B_URL = 'https://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServc';
 
 app.get('/api/bids', async (req, res) => {
-  const keyword  = req.query.keyword  || '살수차';
-  const pageNo   = req.query.pageNo   || 1;
+  const keyword   = req.query.keyword   || '살수차';
+  const pageNo    = req.query.pageNo    || 1;
   const numOfRows = req.query.numOfRows || 20;
 
   const now = new Date();
   const pad = n => String(n).padStart(2, '0');
-  const fmt = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}0000`;
+  const fmt = d => d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + '0000';
   const start = fmt(new Date(now.getTime() - 7  * 24*3600*1000));
   const end   = fmt(new Date(now.getTime() + 30 * 24*3600*1000));
 
@@ -36,33 +35,36 @@ app.get('/api/bids', async (req, res) => {
       timeout: 15000
     });
 
-    const body = response.data?.response?.body;
-    const raw  = body?.items || [];
+    const body = response.data && response.data.response && response.data.response.body;
+    const raw  = (body && body.items) || [];
     const list = Array.isArray(raw) ? raw : (raw ? [raw] : []);
 
-    const items = list.map(i => ({
-      id:       i.bidNtceNo   || '',
-      title:    i.bidNtceNm   || '',
-      agency:   i.ntceInsttNm || '',
-      amount:   Number(i.asignBdgtAmt || i.presmptPrce || 0),
-      deadline: i.bidClseDt   || '',
-      bidType:  i.ntceKindNm  || '',
-      region:   i.rgnNm       || '',
-    }));
+    const items = list.map(function(i) {
+      return {
+        id:       i.bidNtceNo   || '',
+        title:    i.bidNtceNm   || '',
+        agency:   i.ntceInsttNm || '',
+        amount:   Number(i.asignBdgtAmt || i.presmptPrce || 0),
+        deadline: i.bidClseDt   || '',
+        bidType:  i.ntceKindNm  || '',
+        region:   i.rgnNm       || '',
+      };
+    });
 
-    res.json({ ok: true, total: body?.totalCount || 0, items });
+    res.json({ ok: true, total: (body && body.totalCount) || 0, items: items });
 
   } catch (err) {
-    const detail = err.response ? JSON.stringify(err.response.data) : err.message;
+    var detail = err.response ? JSON.stringify(err.response.data) : err.message;
     console.error('에러 상세:', detail);
     res.status(500).json({ ok: false, message: detail });
   }
-  }
 });
 
-app.get('/', (req, res) => {
+app.get('/', function(req, res) {
   res.json({ status: 'BidGear proxy running', key: SERVICE_KEY ? 'loaded' : 'missing' });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`서버 실행중 :${PORT}`));
+var PORT = process.env.PORT || 3000;
+app.listen(PORT, function() {
+  console.log('서버 실행중 :' + PORT);
+});
