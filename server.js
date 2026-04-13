@@ -11,7 +11,6 @@ console.log('G2B KEY:', SERVICE_KEY ? '있음' : '없음');
 const G2B_URL = 'http://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServc';
 
 app.get('/api/bids', async function(req, res) {
-  var keyword   = req.query.keyword   || '';
   var pageNo    = req.query.pageNo    || 1;
   var numOfRows = req.query.numOfRows || 100;
 
@@ -21,7 +20,7 @@ app.get('/api/bids', async function(req, res) {
     return d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + '0000';
   };
   var start = fmt(new Date(now.getTime() - 7 * 24*3600*1000));
-  var end   = fmt(new Date(now.getTime() + 7 * 24*3600*1000));
+  var end   = fmt(new Date(now.getTime() + 14 * 24*3600*1000));
 
   try {
     var response = await axios.get(G2B_URL, {
@@ -33,7 +32,6 @@ app.get('/api/bids', async function(req, res) {
         inqryDiv:    '1',
         inqryBgnDt:  start,
         inqryEndDt:  end,
-        bidNtceNm:   keyword,
       },
       timeout: 15000
     });
@@ -41,13 +39,6 @@ app.get('/api/bids', async function(req, res) {
     var body = response.data && response.data.response && response.data.response.body;
     var raw  = (body && body.items) || [];
     var list = Array.isArray(raw) ? raw : (raw ? [raw] : []);
-
-    // 키워드 서버사이드 필터 (API 필터 안 될 경우 대비)
-    if (keyword) {
-      list = list.filter(function(i) {
-        return (i.bidNtceNm || '').indexOf(keyword) !== -1;
-      });
-    }
 
     var items = list.map(function(i) {
       return {
@@ -61,11 +52,11 @@ app.get('/api/bids', async function(req, res) {
       };
     });
 
-    res.json({ ok: true, total: items.length, items: items });
+    res.json({ ok: true, total: body ? body.totalCount : 0, items: items });
 
   } catch (err) {
     var detail = err.response ? JSON.stringify(err.response.data) : err.message;
-    console.error('에러 상세:', detail);
+    console.error('에러:', detail);
     res.status(500).json({ ok: false, message: detail });
   }
 });
