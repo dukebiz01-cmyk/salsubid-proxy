@@ -8,26 +8,29 @@ app.use(cors());
 const SERVICE_KEY = process.env.G2B_API_KEY;
 console.log('G2B KEY:', SERVICE_KEY ? '있음' : '없음');
 
-const G2B_URL = 'https://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServc';
+const G2B_URL = 'http://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServcPPSSrch';
 
-app.get('/api/bids', async (req, res) => {
-  const keyword   = req.query.keyword   || '살수차';
-  const pageNo    = req.query.pageNo    || 1;
-  const numOfRows = req.query.numOfRows || 20;
+app.get('/api/bids', async function(req, res) {
+  var keyword   = req.query.keyword   || '살수차';
+  var pageNo    = req.query.pageNo    || 1;
+  var numOfRows = req.query.numOfRows || 20;
 
-  const now = new Date();
-  const pad = n => String(n).padStart(2, '0');
-  const fmt = d => d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + '0000';
-  const start = fmt(new Date(now.getTime() - 7  * 24*3600*1000));
-  const end   = fmt(new Date(now.getTime() + 30 * 24*3600*1000));
+  var now = new Date();
+  var pad = function(n) { return String(n).padStart(2, '0'); };
+  var fmtHHMM = function(d) {
+    return d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + pad(d.getHours()) + pad(d.getMinutes());
+  };
+  var start = fmtHHMM(new Date(now.getTime() - 90 * 24*3600*1000));
+  var end   = fmtHHMM(new Date(now.getTime() + 30 * 24*3600*1000));
 
   try {
-    const response = await axios.get(G2B_URL, {
+    var response = await axios.get(G2B_URL, {
       params: {
-        serviceKey:  SERVICE_KEY,
+        ServiceKey:  SERVICE_KEY,
         numOfRows:   numOfRows,
         pageNo:      pageNo,
         type:        'json',
+        inqryDiv:    '1',
         inqryBgnDt:  start,
         inqryEndDt:  end,
         bidNtceNm:   keyword,
@@ -35,11 +38,11 @@ app.get('/api/bids', async (req, res) => {
       timeout: 15000
     });
 
-    const body = response.data && response.data.response && response.data.response.body;
-    const raw  = (body && body.items) || [];
-    const list = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+    var body = response.data && response.data.response && response.data.response.body;
+    var raw  = (body && body.items) || [];
+    var list = Array.isArray(raw) ? raw : (raw ? [raw] : []);
 
-    const items = list.map(function(i) {
+    var items = list.map(function(i) {
       return {
         id:       i.bidNtceNo   || '',
         title:    i.bidNtceNm   || '',
