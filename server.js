@@ -31,6 +31,7 @@ app.get('/api/bids', async function(req, res) {
         numOfRows:   numOfRows,
         pageNo:      pageNo,
         type:        'json',
+        inqryDiv:    '1',
         inqryBgnDt:  start,
         inqryEndDt:  end,
         bidNtceNm:   keyword,
