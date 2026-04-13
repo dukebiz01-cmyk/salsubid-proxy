@@ -15,20 +15,30 @@ app.get('/api/bids', async function(req, res) {
   var pageNo    = req.query.pageNo    || 1;
   var numOfRows = req.query.numOfRows || 20;
 
+  var now = new Date();
+  var pad = function(n) { return String(n).padStart(2, '0'); };
+  var fmt = function(d) {
+    return d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + '0000';
+  };
+  var start = fmt(new Date(now.getTime() - 90 * 24*3600*1000));
+  var end   = fmt(new Date(now.getTime() + 30 * 24*3600*1000));
+
   try {
-    console.log('G2B 호출 keyword:', keyword);
+    console.log('G2B 호출 keyword:', keyword, 'start:', start, 'end:', end);
     var response = await axios.get(G2B_URL, {
       params: {
         ServiceKey:  SERVICE_KEY,
         numOfRows:   numOfRows,
         pageNo:      pageNo,
         type:        'json',
+        inqryBgnDt:  start,
+        inqryEndDt:  end,
         bidNtceNm:   keyword,
       },
       timeout: 15000
     });
 
-    console.log('G2B 응답:', JSON.stringify(response.data).slice(0, 200));
+    console.log('G2B 응답:', JSON.stringify(response.data).slice(0, 300));
 
     var body = response.data && response.data.response && response.data.response.body;
     var raw  = (body && body.items) || [];
