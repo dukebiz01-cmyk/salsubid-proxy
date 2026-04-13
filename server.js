@@ -8,37 +8,27 @@ app.use(cors());
 const SERVICE_KEY = process.env.G2B_API_KEY;
 console.log('G2B KEY:', SERVICE_KEY ? '있음' : '없음');
 
-const G2B_URL = 'http://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServcPPSSrch';
+const G2B_URL = 'http://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServc';
 
 app.get('/api/bids', async function(req, res) {
   var keyword   = req.query.keyword   || '살수차';
   var pageNo    = req.query.pageNo    || 1;
   var numOfRows = req.query.numOfRows || 20;
 
-  var now = new Date();
-  var pad = function(n) { return String(n).padStart(2, '0'); };
-  var fmtHHMM = function(d) {
-    return d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + pad(d.getHours()) + pad(d.getMinutes());
-  };
-  var start = fmtHHMM(new Date(now.getTime() - 90 * 24*3600*1000));
-  var end   = fmtHHMM(new Date(now.getTime() + 30 * 24*3600*1000));
-
-  
   try {
-    console.log('G2B 호출 start:', start, 'end:', end);
+    console.log('G2B 호출 keyword:', keyword);
     var response = await axios.get(G2B_URL, {
       params: {
         ServiceKey:  SERVICE_KEY,
         numOfRows:   numOfRows,
         pageNo:      pageNo,
         type:        'json',
-        inqryDiv:    '1',
-        inqryBgnDt:  start,
-        inqryEndDt:  end,
         bidNtceNm:   keyword,
       },
       timeout: 15000
     });
+
+    console.log('G2B 응답:', JSON.stringify(response.data).slice(0, 200));
 
     var body = response.data && response.data.response && response.data.response.body;
     var raw  = (body && body.items) || [];
