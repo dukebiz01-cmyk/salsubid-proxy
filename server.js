@@ -23,7 +23,9 @@ app.get('/api/bids', async function(req, res) {
   var start = fmtHHMM(new Date(now.getTime() - 90 * 24*3600*1000));
   var end   = fmtHHMM(new Date(now.getTime() + 30 * 24*3600*1000));
 
+  
   try {
+    console.log('G2B 호출 start:', start, 'end:', end);
     var response = await axios.get(G2B_URL, {
       params: {
         ServiceKey:  SERVICE_KEY,
