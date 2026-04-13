@@ -20,8 +20,8 @@ app.get('/api/bids', async function(req, res) {
   var fmt = function(d) {
     return d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + '0000';
   };
-  var start = fmt(new Date(now.getTime() - 90 * 24*3600*1000));
-  var end   = fmt(new Date(now.getTime() + 30 * 24*3600*1000));
+  var start = fmt(new Date(now.getTime() - 7 * 24*3600*1000));
+  var end   = fmt(new Date(now.getTime() + 7 * 24*3600*1000));
 
   try {
     console.log('G2B 호출 keyword:', keyword, 'start:', start, 'end:', end);
