@@ -98,8 +98,12 @@ function normalizeAward(item){
 // G2B API 호출
 // ──────────────────────────────────────────
 async function fetchG2BBids({ keyword='', numOfRows=100, pageNo=1 }={}){
+  const now  = new Date();
+  const from = new Date(now.getTime() - 7*24*60*60*1000);
+  const fmt  = d => d.toISOString().slice(0,10).replace(/-/g,'');
   const url = `https://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServc`
     +`?serviceKey=${encKey(G2B_KEY)}&numOfRows=${numOfRows}&pageNo=${pageNo}&_type=json`
+    +`&inqryDiv=1&inqryBgnDt=${fmt(from)}0000&inqryEndDt=${fmt(now)}2359`
     +(keyword?`&bidNtceNm=${encodeURIComponent(keyword)}`:'');
   const res  = await fetch(url, { timeout: 15000 });
   const text = await res.text();
