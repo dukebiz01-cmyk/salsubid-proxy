@@ -22,7 +22,6 @@ module.exports = function createEngineRoutes({ supabase }) {
 
       // 공고 조회
       let q = supabase.from('bids').select('*')
-        .gte('deadline', new Date().toISOString())
         .order('deadline', { ascending: true })
         .limit(Number(limit));
       if (keyword) q = q.ilike('title', `%${keyword}%`);
