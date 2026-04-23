@@ -58,7 +58,8 @@ module.exports = function createEngineRoutes({ supabase }) {
           next_actions:      score.next_actions,
           engine_version:    ENGINE_VERSION,
           scored_at:         new Date().toISOString(),
-        }, { onConflict: 'bid_id,company_id,engine_version' }).catch(() => {});
+        }, { onConflict: 'bid_id,company_id,engine_version' })
+        .then(() => {}).catch(() => {});
 
         scored.push({ ...bid, ai: score });
       }
