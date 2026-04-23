@@ -107,9 +107,39 @@ async function fetchG2BBids({ keyword='', numOfRows=100, pageNo=1 }={}){
     +(keyword?`&bidNtceNm=${encodeURIComponent(keyword)}`:'');
   const res  = await fetch(url, { timeout: 15000 });
   const text = await res.text();
-  let data;
-  try { data = JSON.parse(text); } catch { throw new Error(`G2B 파싱 오류: ${text.slice(0,120)}`); }
-  const body = data?.response?.body;
+  let body;
+  try {
+    // JSON 파싱 시도
+    const data = JSON.parse(text);
+    body = data?.response?.body;
+  } catch {
+    // XML fallback 파싱
+    const parseXmlValue = (tag) => {
+      const m = text.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`));
+      return m ? m[1].trim() : '';
+    };
+    const totalCount = parseXmlValue('totalCount');
+    // XML item 파싱
+    const itemMatches = [...text.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+    const items = itemMatches.map(m => {
+      const xml = m[1];
+      const getVal = tag => { const r = xml.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`)); return r ? r[1].trim() : ''; };
+      return {
+        bidNtceNo:    getVal('bidNtceNo'),
+        bidNtceOrd:   getVal('bidNtceOrd'),
+        bidNtceNm:    getVal('bidNtceNm'),
+        dminsttNm:    getVal('dminsttNm'),
+        dminsttCd:    getVal('dminsttCd'),
+        ntceRegionNm: getVal('ntceRegionNm'),
+        asignBdgtAmt: getVal('asignBdgtAmt'),
+        presmptPrce:  getVal('presmptPrce'),
+        bidClseDt:    getVal('bidClseDt'),
+        bidMthdNm:    getVal('bidMthdNm'),
+        indstrytyCd:  getVal('indstrytyCd'),
+      };
+    });
+    return { total: Number(totalCount||0), items: items.map(normalizeItem) };
+  }
   if(!body) throw new Error('G2B 응답 형식 오류');
   const raw  = body?.items?.item || [];
   const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
