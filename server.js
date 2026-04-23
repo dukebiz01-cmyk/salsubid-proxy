@@ -40,13 +40,22 @@ function encKey(k){ return k.includes('%') ? k : encodeURIComponent(k); }
 
 function parseDeadline(s){
   if(!s) return null;
-  const t=String(s).trim();
+  const t = String(s).trim();
+  if(!t) return null;
   let d;
-  if(/^\d{14}$/.test(t))
-    d=new Date(`${t.slice(0,4)}-${t.slice(4,6)}-${t.slice(6,8)}T${t.slice(8,10)}:${t.slice(10,12)}:00+09:00`);
-  else
-    d=new Date(t);
-  return isNaN(d.getTime())?null:d;
+  // 14자리 숫자: 20260527120000
+  if(/^\d{14}$/.test(t)){
+    d = new Date(`${t.slice(0,4)}-${t.slice(4,6)}-${t.slice(6,8)}T${t.slice(8,10)}:${t.slice(10,12)}:00+09:00`);
+  }
+  // "2026-05-27 12:00:00" 공백 형식
+  else if(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(t)){
+    d = new Date(t.replace(' ', 'T') + '+09:00');
+  }
+  // ISO 형식
+  else {
+    d = new Date(t);
+  }
+  return isNaN(d.getTime()) ? null : d;
 }
 
 // ── S7 수정: compound PK + category 포함
@@ -101,8 +110,14 @@ function normalizeAward(item){
 // G2B API 호출
 // ──────────────────────────────────────────
 async function fetchG2BBids({ keyword='', numOfRows=100, pageNo=1 }={}){
+  const now  = new Date();
+  const to   = new Date(now.getTime() + 30*24*60*60*1000); // 30일 후 마감까지
+  const fmt  = d => d.toISOString().slice(0,10).replace(/-/g,'');
+
+  // 마감일 기준(inqryDiv=2): 오늘~30일후 마감 공고만 수집
   const url = `https://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServc`
     +`?serviceKey=${encKey(G2B_KEY)}&numOfRows=${numOfRows}&pageNo=${pageNo}&_type=json`
+    +`&inqryDiv=2&inqryBgnDt=${fmt(now)}0000&inqryEndDt=${fmt(to)}2359`
     +(keyword?`&bidNtceNm=${encodeURIComponent(keyword)}`:'');
   const res  = await fetch(url, { timeout: 15000 });
   const text = await res.text();
@@ -127,11 +142,12 @@ async function fetchG2BBids({ keyword='', numOfRows=100, pageNo=1 }={}){
         asignBdgtAmt: getVal('asignBdgtAmt'),
         presmptPrce:  getVal('presmptPrce'),
         bidClseDt:    getVal('bidClseDt'),
+        opengDt:      getVal('opengDt'),
         bidMthdNm:    getVal('bidMthdNm'),
         indstrytyCd:  getVal('indstrytyCd'),
       };
     });
-    console.log(`[G2B XML] totalCount=${totalMatch?.[1]||0} items=${items.length} keyword=${keyword}`);
+    console.log(`[G2B XML] totalCount=${totalMatch?.[1]||0} items=${items.length} keyword=${keyword||'전체'}`);
     return { total: Number(totalMatch?.[1]||0), items: items.map(normalizeItem) };
   }
   if(!body) throw new Error('G2B 응답 형식 오류');
