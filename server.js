@@ -99,7 +99,7 @@ function normalizeAward(item){
 // ──────────────────────────────────────────
 async function fetchG2BBids({ keyword='', numOfRows=100, pageNo=1 }={}){
   const now  = new Date();
-  const from = new Date(now.getTime() - 7*24*60*60*1000);
+  const from = new Date(now.getTime() - 30*24*60*60*1000);
   const fmt  = d => d.toISOString().slice(0,10).replace(/-/g,'');
   const url = `https://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServc`
     +`?serviceKey=${encKey(G2B_KEY)}&numOfRows=${numOfRows}&pageNo=${pageNo}&_type=json`
