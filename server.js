@@ -266,7 +266,7 @@ async function rescoreActiveBids(){
       await supabase.from('bid_scores').upsert({
         bid_id: bid.id, company_id: profile.id, ...score,
         scored_at: new Date().toISOString(),
-      },{ onConflict:'bid_id,company_id,engine_version' }).catch(()=>{});
+      },{ onConflict:'bid_id,company_id,engine_version' }).then(()=>{}).catch(()=>{});
       count++;
     }
   }
