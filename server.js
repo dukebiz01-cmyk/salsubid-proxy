@@ -98,29 +98,19 @@ function normalizeAward(item){
 // G2B API 호출
 // ──────────────────────────────────────────
 async function fetchG2BBids({ keyword='', numOfRows=100, pageNo=1 }={}){
-  const now  = new Date();
-  const from = new Date(now.getTime() - 30*24*60*60*1000);
-  const fmt  = d => d.toISOString().slice(0,10).replace(/-/g,'');
   const url = `https://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServc`
     +`?serviceKey=${encKey(G2B_KEY)}&numOfRows=${numOfRows}&pageNo=${pageNo}&_type=json`
-    +`&inqryDiv=1&inqryBgnDt=${fmt(from)}0000&inqryEndDt=${fmt(now)}2359`
     +(keyword?`&bidNtceNm=${encodeURIComponent(keyword)}`:'');
   const res  = await fetch(url, { timeout: 15000 });
   const text = await res.text();
   let body;
   try {
-    // JSON 파싱 시도
     const data = JSON.parse(text);
     body = data?.response?.body;
   } catch {
     // XML fallback 파싱
-    const parseXmlValue = (tag) => {
-      const m = text.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`));
-      return m ? m[1].trim() : '';
-    };
-    const totalCount = parseXmlValue('totalCount');
-    // XML item 파싱
     const itemMatches = [...text.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+    const totalMatch  = text.match(/<totalCount>(\d+)<\/totalCount>/);
     const items = itemMatches.map(m => {
       const xml = m[1];
       const getVal = tag => { const r = xml.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`)); return r ? r[1].trim() : ''; };
@@ -138,7 +128,8 @@ async function fetchG2BBids({ keyword='', numOfRows=100, pageNo=1 }={}){
         indstrytyCd:  getVal('indstrytyCd'),
       };
     });
-    return { total: Number(totalCount||0), items: items.map(normalizeItem) };
+    console.log(`[G2B XML] totalCount=${totalMatch?.[1]||0} items=${items.length} keyword=${keyword}`);
+    return { total: Number(totalMatch?.[1]||0), items: items.map(normalizeItem) };
   }
   if(!body) throw new Error('G2B 응답 형식 오류');
   const raw  = body?.items?.item || [];
