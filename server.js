@@ -11,6 +11,7 @@ const { detectCategories }         = require('./engine/categoryEngine');
 const { buildPriceRanges, defaultPriceRanges, calcRateStats } = require('./engine/priceEngine');
 const createEngineRoutes   = require('./routes/engine');
 const createFeedbackRoutes = require('./routes/feedback');
+const createAiRoutes       = require('./routes/ai');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -20,6 +21,7 @@ const G2B_KEY  = process.env.G2B_SERVICE_KEY    || '';
 const SB_URL   = process.env.SUPABASE_URL        || '';
 const SB_KEY   = process.env.SUPABASE_SERVICE_KEY|| '';
 const ADMIN_SK = process.env.ADMIN_SECRET        || 'admin1234';
+// ANTHROPIC_API_KEY는 aiEngine.js에서 직접 process.env로 읽음
 
 const supabase = createClient(SB_URL, SB_KEY);
 
@@ -29,6 +31,7 @@ app.use(express.json());
 // ── 라우터 마운트
 app.use('/api/engine',   createEngineRoutes({ supabase }));
 app.use('/api/feedback', createFeedbackRoutes({ supabase }));
+app.use('/api/ai',       createAiRoutes({ supabase }));
 
 // ──────────────────────────────────────────
 // 유틸
